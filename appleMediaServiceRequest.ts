@@ -1,4 +1,4 @@
-import type { IOSApps } from "./types";
+import type { IOSApps, AppData } from "./types";
 
 const myHeaders = new Headers();
 myHeaders.append('authority', 'tools.applemediaservices.com');
@@ -35,7 +35,7 @@ const requestOptions = {
 export const fetchData = async (
     countryCode: string,
     term: string,
-    limit: number,
+    limit = 10,
 ) => {
     try {
         const baseURL = `https://tools.applemediaservices.com/api/apple-media/apps/${countryCode}/search.json?`;
@@ -45,20 +45,19 @@ export const fetchData = async (
             limit: limit.toString(),
             l: 'en-US',
             platform: 'iphone',
+            additionalPlatforms: 'iphone,mac,appletv,ipad,watch,web',
         }).toString();
         const response = await fetch(`${baseURL}${params}`, requestOptions);
         const result = (await response.json()) as IOSApps;
-        console.log('Number of Apps:', result.apps.data.length)
-        for (const app of result.apps.data) {
-            console.log(`Title: ${app.attributes.name}`);
-            console.log(`Subtitle: ${app.attributes.platformAttributes.ios.subtitle}`);
-            console.log(`Rating: ${app.attributes.userRating.value}`);
-            console.log(`Rating Count: ${app.attributes.userRating.ratingCount}\n`);
-        }
-        // console.log(JSON.stringify(result, null, 2));
+        const appList: AppData[] = result.apps.data.map((app) => ({
+            name: app.attributes.name,
+            subtitle: app.attributes.platformAttributes.ios.subtitle,
+            rating: app.attributes.userRating.value,
+            ratingCount: app.attributes.userRating.ratingCount,
+        }));
+
+        return appList;
     } catch (error) {
         console.log('error', error);
     }
 };
-
-fetchData('JP', 'ジム', 10);

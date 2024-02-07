@@ -1,4 +1,6 @@
-export const countries = {
+import type { CountryCodes } from "./types";
+
+export const countries: CountryCodes = {
     ae: 'United Arab Emirates',
     ag: 'Antigua and Barbuda',
     ai: 'Anguilla',
