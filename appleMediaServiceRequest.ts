@@ -1,4 +1,4 @@
-import type { IOSApps, AppData } from "./types";
+import type { IOSApps, AppData } from './types';
 
 const myHeaders = new Headers();
 myHeaders.append('authority', 'tools.applemediaservices.com');
@@ -49,7 +49,7 @@ export const fetchData = async (
         }).toString();
         const response = await fetch(`${baseURL}${params}`, requestOptions);
         const result = (await response.json()) as IOSApps;
-        const appList: AppData[] = result.apps.data.map((app) => ({
+        const appList: AppData[] = result.apps.data.map(app => ({
             name: app.attributes.name,
             subtitle: app.attributes.platformAttributes.ios.subtitle,
             rating: app.attributes.userRating.value,
