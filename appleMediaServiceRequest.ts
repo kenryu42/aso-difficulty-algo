@@ -28,25 +28,42 @@ myHeaders.append(
 
 const requestOptions = {
     method: 'GET',
-    headers: myHeaders,
+    headers: {
+        authority: 'tools.applemediaservices.com',
+        accept: 'application/json, text/plain, */*',
+        'accept-language':
+            'en-US,en;q=0.9,ja;q=0.8,zh-CN;q=0.7,zh;q=0.6,zh-TW;q=0.5',
+        dnt: '1',
+        referer: 'https://tools.applemediaservices.com/apple-app-store-promote',
+        'sec-ch-ua':
+            '"Not A(Brand";v="99", "Google Chrome";v="121", "Chromium";v="121"',
+        'sec-ch-ua-mobile': '?1',
+        'sec-ch-ua-platform': '"Android"',
+        'sec-fetch-dest': 'empty',
+        'sec-fetch-mode': 'cors',
+        'sec-fetch-site': 'same-origin',
+        'user-agent':
+            'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Mobile Safari/537.36',
+    },
     redirect: 'follow' as RequestRedirect,
 };
 
-export const fetchData = async (
+export const fetchTop10AppsData = async (
     countryCode: string,
     term: string,
     limit = 10,
 ) => {
+    const baseURL = `https://tools.applemediaservices.com/api/apple-media/apps/${countryCode}/search.json?`;
+    const params = new URLSearchParams({
+        types: 'apps',
+        term,
+        limit: limit.toString(),
+        l: 'en-US',
+        platform: 'iphone',
+        additionalPlatforms: 'iphone,mac,appletv,ipad,watch,web',
+    }).toString();
+
     try {
-        const baseURL = `https://tools.applemediaservices.com/api/apple-media/apps/${countryCode}/search.json?`;
-        const params = new URLSearchParams({
-            types: 'apps',
-            term,
-            limit: limit.toString(),
-            l: 'en-US',
-            platform: 'iphone',
-            additionalPlatforms: 'iphone,mac,appletv,ipad,watch,web',
-        }).toString();
         const response = await fetch(`${baseURL}${params}`, requestOptions);
         const result = (await response.json()) as IOSApps;
         const appList: AppData[] = result.apps.data.map(app => ({
@@ -58,6 +75,6 @@ export const fetchData = async (
 
         return appList;
     } catch (error) {
-        console.log('error', error);
+        console.error(`Failed to fetch data for term "${term}":`, error);
     }
 };

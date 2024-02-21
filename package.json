@@ -2,12 +2,13 @@
   "name": "aso-difficulty-algo",
   "module": "index.ts",
   "scripts": {
-    "start": "bun run index.ts",
+    "start": "bun index.ts",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx,.json --fix"
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "@types/node-fetch": "^2.6.11",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
     "eslint": "^8.56.0",

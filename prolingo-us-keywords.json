@@ -1,0 +1,22 @@
+[
+  {
+    "name": "learn spanish",
+    "popularity": 54,
+    "difficulty": 81
+  },
+  {
+    "name": "spanish",
+    "popularity": 44,
+    "difficulty": 82
+  },
+  {
+    "name": "learn english",
+    "popularity": 39,
+    "difficulty": 81
+  },
+  {
+    "name": "learn",
+    "popularity": 36,
+    "difficulty": 86
+  }
+]

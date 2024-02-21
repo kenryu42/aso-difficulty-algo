@@ -11,163 +11,110 @@ export const calculateDifficulty = (
     top10AppsData: AppData[],
     keyword: string,
 ): number => {
-    // Helper function to count keyword appearances in title and subtitle
-    const countKeywordAppearances = (text: string, keyword: string): number => {
-        const regex = new RegExp(keyword, 'gi'); // 'gi' for case-insensitive and global search
-        const matches = text.match(regex);
-        return matches ? matches.length : 0;
-    };
-
-    // Calculate keyword appearances, logarithmically transformed rating counts, and average ratings
-    let totalKeywordAppearances = 0;
-    let totalLogRatingCount = 0;
-    let totalRating = 0;
-
-    top10AppsData.forEach(app => {
-        totalKeywordAppearances += countKeywordAppearances(
-            app.name + ' ' + app.subtitle,
-            keyword,
-        );
-        totalLogRatingCount += Math.log1p(app.ratingCount);
-        totalRating += app.rating;
-    });
-
-    // Calculate averages
-    const avgKeywordAppearance = totalKeywordAppearances / top10AppsData.length;
-    const avgLogRatingCount = totalLogRatingCount / top10AppsData.length;
-    const avgRating = totalRating / top10AppsData.length;
-
-    // Normalize and combine the factors to calculate difficulty
-    // Assuming the maximum average appearances could be up to 2 (once in title, once in subtitle)
-    const normalizedKeywordAppearance = (avgKeywordAppearance / 2) * 100;
-    const normalizedLogRatingCount =
-        (avgLogRatingCount / Math.log1p(100000)) * 100; // Example normalization
-    const normalizedRating = (avgRating / 5.0) * 100;
-
-    // Combine normalized values for final difficulty score
-    const difficultyScore =
-        (normalizedKeywordAppearance +
-            normalizedLogRatingCount +
-            normalizedRating) /
-        3;
-
-    return difficultyScore;
-};
-
-export const calculateDifficultyEx = (
-    top10AppsData: AppData[],
-    keyword: string,
-): number => {
-    // Escape special characters in the keyword for regex
     const escapeRegExp = (string: string) =>
         string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const escapedKeyword = escapeRegExp(keyword);
 
-    // Helper function to count keyword appearances accurately
-    const countKeywordAppearances = (text: string, keyword: string): number => {
-        const regex = new RegExp(`\\b${keyword}\\b`, 'gi'); // Use word boundaries to match whole words
-        const matches = text.match(regex);
-        return matches ? matches.length : 0;
+    const checkKeywordPositionScore = (text: string): number => {
+        const regex = new RegExp(escapedKeyword, 'gi');
+        const match = regex.exec(text);
+
+        if (match) {
+            const position = match.index;
+            const maxLength = 60;
+
+            return Math.max(0, 1 - position / maxLength);
+        }
+
+        return 0;
     };
 
-    let totalKeywordAppearances = 0;
-    let totalLogRatingCount = 0;
-    let totalRating = 0;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const checkKeywordPresence = (text: string): number => {
+        const regex = new RegExp(escapedKeyword, 'gi');
 
-    top10AppsData.forEach(app => {
-        totalKeywordAppearances += countKeywordAppearances(
-            app.name + ' ' + app.subtitle,
-            escapedKeyword,
-        );
-        totalLogRatingCount += Math.log1p(app.ratingCount);
-        totalRating += app.rating;
-    });
-
-    const avgKeywordAppearance = totalKeywordAppearances / top10AppsData.length;
-    const avgLogRatingCount = totalLogRatingCount / top10AppsData.length;
-    const avgRating = totalRating / top10AppsData.length;
-
-    // Dynamic normalization based on dataset analysis (placeholder values, should be calculated)
-    const maxAvgKeywordAppearance = 2; // Placeholder, should be based on data
-    const maxLogRatingCount = Math.log1p(20000000); // Placeholder, should be based on data
-    const maxRating = 5.0; // Typically the maximum rating
-
-    const normalizedKeywordAppearance =
-        (avgKeywordAppearance / maxAvgKeywordAppearance) * 100;
-    const normalizedLogRatingCount =
-        (avgLogRatingCount / maxLogRatingCount) * 100;
-    const normalizedRating = (avgRating / maxRating) * 100;
-
-    // Introduce weights based on perceived importance
-    const weightKeywordAppearance = 0.5;
-    const weightLogRatingCount = 0.3;
-    const weightRating = 0.2;
-
-    // Weighted combination of normalized values for final difficulty score
-    const difficultyScore =
-        (normalizedKeywordAppearance * weightKeywordAppearance +
-            normalizedLogRatingCount * weightLogRatingCount +
-            normalizedRating * weightRating) /
-        (weightKeywordAppearance + weightLogRatingCount + weightRating);
-
-    return difficultyScore;
-};
-
-export const calculateDifficultyEx2 = (
-    top10AppsData: AppData[],
-    keyword: string,
-): number => {
-    // Escape special characters in the keyword for regex
-    const escapeRegExp = (string: string) =>
-        string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const escapedKeyword = escapeRegExp(keyword);
-
-    // Helper function to check keyword presence in title and subtitle
-    const checkKeywordPresence = (text: string, keyword: string): number => {
-        const regex = new RegExp(`\\b${keyword}\\b`, 'gi'); // Use word boundaries to match whole words
         return regex.test(text) ? 1 : 0;
     };
 
-    let keywordPresenceCount = 0;
-    let totalLogRatingCount = 0;
+    let keywordPositionScoreSum = 0;
     let totalRating = 0;
+    let totalRatingCountLog = 0;
+    let maxRatingCountLog = 0;
+    let maxRatingCount = 0;
+    let actualTotalRatingCount = 0;
 
-    top10AppsData.forEach(app => {
-        // Check if the keyword is present in either the name or subtitle, not counting repetitions
-        keywordPresenceCount += checkKeywordPresence(
-            app.name + ' ' + app.subtitle,
-            escapedKeyword,
+    top10AppsData.forEach((app, index) => {
+        const logRatingCount = Math.log1p(app.ratingCount);
+
+        keywordPositionScoreSum += checkKeywordPositionScore(
+            `${app.name} ${app.subtitle}`,
         );
-        totalLogRatingCount += Math.log1p(app.ratingCount);
         totalRating += app.rating;
+        totalRatingCountLog += logRatingCount;
+        actualTotalRatingCount += app.ratingCount;
+
+        if (logRatingCount > maxRatingCountLog) {
+            maxRatingCountLog = logRatingCount;
+        }
+        if (app.ratingCount > maxRatingCount) {
+            maxRatingCount = app.ratingCount;
+        }
+
+        console.log(`${index + 1}: ${app.name}`);
+        console.log(`${app.subtitle}`);
+        console.log(
+            `Keyword Position Score: ${checkKeywordPositionScore(`${app.name} ${app.subtitle}`)}`,
+        );
+        console.log(`Rating Count: ${app.ratingCount}`);
+        console.log(`Rating: ${app.rating}\n`);
     });
 
-    const avgKeywordPresence = keywordPresenceCount / top10AppsData.length;
-    const avgLogRatingCount = totalLogRatingCount / top10AppsData.length;
+    console.log(`maxRatingCount: ${maxRatingCount}\n`);
+
+    const avgKeywordPositionScore =
+        keywordPositionScoreSum / top10AppsData.length;
     const avgRating = totalRating / top10AppsData.length;
+    const avgRatingCountLog = totalRatingCountLog / top10AppsData.length;
+    const avgActualRatingCount = actualTotalRatingCount / top10AppsData.length;
 
-    // Normalization based on data (placeholders for dynamic values based on actual data analysis)
-    const maxKeywordPresence = 1; // As we're now only checking for presence, this is always 1
-    const maxLogRatingCount = Math.log1p(100000); // Placeholder, adjust based on data
-    const maxRating = 5.0; // Maximum rating value
+    const competitivenessMultiplier = 1 + Math.log1p(avgActualRatingCount) / 90;
 
-    const normalizedKeywordPresence =
-        (avgKeywordPresence / maxKeywordPresence) * 100;
-    const normalizedLogRatingCount =
-        (avgLogRatingCount / maxLogRatingCount) * 100;
-    const normalizedRating = (avgRating / maxRating) * 100;
+    const normalizedKeywordPositionScore = (avgKeywordPositionScore / 1) * 100;
+    const normalizedRating = (avgRating / 5.0) * 100;
+    const normalizedRatingCount =
+        (avgRatingCountLog / maxRatingCountLog) *
+        100 *
+        competitivenessMultiplier;
 
-    // Weighted combination of normalized values for final difficulty score
-    // Weights can be adjusted based on perceived importance
-    const weightKeywordPresence = 0.4;
-    const weightLogRatingCount = 0.3;
-    const weightRating = 0.3;
+    console.log(`competitivenessMultiplier: ${competitivenessMultiplier}\n`);
+    console.log(`avgKeywordAppearance: ${avgKeywordPositionScore}`);
+    console.log(`avgRating: ${avgRating}`);
+    console.log(`avgRatingCountLog: ${avgRatingCountLog}\n`);
+    console.log(
+        `normalizedKeywordPositionScore: ${normalizedKeywordPositionScore}`,
+    );
+    console.log(`normalizedRating: ${normalizedRating}`);
+    console.log(`normalizedRatingCount: ${normalizedRatingCount}\n`);
+
+    const weightKeywordPresence = 0.1;
+    const weightmaxRatingCountLog = 0.8;
+    const weightRating = 0.1;
+
+    console.log(
+        `Keyword Presence Score: ${normalizedKeywordPositionScore * weightKeywordPresence} / ${weightKeywordPresence * 100}`,
+    );
+    console.log(
+        `Rating Count Score: ${normalizedRatingCount * weightmaxRatingCountLog} / ${weightmaxRatingCountLog * 100}`,
+    );
+    console.log(
+        `Rating Score: ${normalizedRating * weightRating} / ${weightRating * 100}\n`,
+    );
 
     const difficultyScore =
-        (normalizedKeywordPresence * weightKeywordPresence +
-            normalizedLogRatingCount * weightLogRatingCount +
+        (normalizedKeywordPositionScore * weightKeywordPresence +
+            normalizedRatingCount * weightmaxRatingCountLog +
             normalizedRating * weightRating) /
-        (weightKeywordPresence + weightLogRatingCount + weightRating);
+        (weightKeywordPresence + weightmaxRatingCountLog + weightRating);
 
-    return difficultyScore;
+    return Math.round(difficultyScore);
 };
